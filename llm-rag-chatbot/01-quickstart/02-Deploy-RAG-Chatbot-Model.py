@@ -42,9 +42,10 @@
 
 # COMMAND ----------
 
-my_initals= 'aj'
-db = f"rag_chatbot_{my_initals}"
+my_initals= '<put your initals here!>'
 
+db = f"rag_chatbot_{my_initals}"
+db = f"rag_chatbot"
 sql_query = f"""
 CREATE DATABASE IF NOT EXISTS {db};
 """
@@ -59,10 +60,6 @@ spark.sql(sql_query)
 # COMMAND ----------
 
 # MAGIC %run ../_resources/00-init $reset_all_data=false
-
-# COMMAND ----------
-
-dbutils.secrets.get("dbdemos", "rag_sp_token")[:-1]
 
 # COMMAND ----------
 
@@ -98,7 +95,7 @@ dbutils.secrets.get("dbdemos", "rag_sp_token")[:-1]
 index_name=f"{catalog}.{db}.databricks_documentation_vs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
-test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="bge-large-en-aj")
+test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en")
 
 # COMMAND ----------
 
@@ -128,7 +125,6 @@ w.current_user.me().emails[0].value
 # url used to send the request to your model from the serverless endpoint
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get("dbdemos", "rag_sp_token")
-
 print(host)
 
 # COMMAND ----------
@@ -139,7 +135,7 @@ from langchain.embeddings import DatabricksEmbeddings
 
 # Test embedding Langchain model
 #NOTE: your question embedding model must match the one used in the chunk in the previous model 
-embedding_model = DatabricksEmbeddings(endpoint="bge-large-en-aj")
+embedding_model = DatabricksEmbeddings(endpoint="databricks-bge-large-en")
 print(f"Test embeddings: {embedding_model.embed_query('What is Apache Spark?')[:20]}...")
 
 def get_retriever(persist_dir: str = None):
@@ -182,6 +178,7 @@ print(f"Relevant documents: {similar_documents[0]}")
 
 # COMMAND ----------
 
+# DBTITLE 1,Query Foundational Model API
 # Test Databricks Foundation LLM model
 from langchain.chat_models import ChatDatabricks
 chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
@@ -189,11 +186,12 @@ print(f"Test chat model: {chat_model.predict('What is Apache Spark')}")
 
 # COMMAND ----------
 
+# DBTITLE 1,Query Serverless Model Serving Endpoint
 from langchain_community.llms import Databricks
 
 # Test LLM model on Serverless Endpoint 
 chat_model = Databricks(
-    endpoint_name="llama-2-13B-chat-aj",
+    endpoint_name="llama_2_13b_chat",
     task="llama2/chat",
     verbose=True,
 )
@@ -262,7 +260,7 @@ print(answer)
 
 #dbdemos__delete_this_cell
 #force the experiment to the field demos one. Required to launch as a batch
-init_experiment_for_batch("chatbot-rag-llm-custom-aj", "simple")
+init_experiment_for_batch("chatbot-rag-llm-custom", "simple")
 
 # COMMAND ----------
 
@@ -271,7 +269,7 @@ from mlflow.models import infer_signature
 import mlflow
 
 mlflow.set_registry_uri("databricks-uc")
-model_name = f"{catalog}.{db}.dbdemos_chatbot_model_cus
+model_name = f"{catalog}.{db}.dbdemos_chatbot_model"
 
 with mlflow.start_run(run_name="dbdemos_chatbot_rag") as run:
     signature = infer_signature(question, answer)
@@ -304,7 +302,7 @@ with mlflow.start_run(run_name="dbdemos_chatbot_rag") as run:
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedModelInput
 
-serving_endpoint_name = f"dbdemos_endpoint_{catalog}_{db}_aj"
+serving_endpoint_name = f"dbdemos_endpoint_{catalog}_{db}"
 latest_model_version = get_latest_model_version(model_name)
 
 w = WorkspaceClient()
@@ -317,7 +315,7 @@ endpoint_config = EndpointCoreConfigInput(
             workload_size="Small",
             scale_to_zero_enabled=True,
             environment_vars={
-                "DATABRICKS_TOKEN": "{{secrets/dbdemos/rag_sp_token}}",  # <scope>/<secret> that contains an access token
+                "DATABRICKS_TOKEN": "{{secrets/dbdemos/rag_sp_token}}",
             }
         )
     ]
@@ -347,7 +345,6 @@ displayHTML(f'Your Model Endpoint Serving is now available. Open the <a href="/m
 
 # DBTITLE 1,Let's try to send a query to our chatbot
 question = "How can I track billing usage on my workspaces?"
-
 answer = w.serving_endpoints.query(serving_endpoint_name, inputs=[{"query": question}])
 print(answer.predictions[0])
 
@@ -398,4 +395,4 @@ display_gradio_app("databricks-demos-chatbot")
 # COMMAND ----------
 
 # /!\ THIS WILL DROP YOUR DEMO SCHEMA ENTIRELY /!\ 
-# cleanup_demo(catalog, db, serving_endpoint_name, f"{catalog}.{db}.databricks_documentation_vs_index")
+cleanup_demo(catalog, db, serving_endpoint_name, f"{catalog}.{db}.databricks_documentation_vs_index")

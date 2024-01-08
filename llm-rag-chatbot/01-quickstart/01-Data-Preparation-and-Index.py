@@ -42,7 +42,7 @@
 
 # COMMAND ----------
 
-my_initals= 'aj'
+my_initals= '<put your initals here!>'
 db = f"rag_chatbot_{my_initals}"
 
 sql_query = f"""
@@ -216,7 +216,7 @@ split_html_on_h2(html)
 import mlflow.deployments
 deploy_client = mlflow.deployments.get_deploy_client("databricks")
 
-response = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": ["What is Apache Spark?"]})
+response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": ["What is Apache Spark?"]})
 embeddings = [e['embedding'] for e in response.data]
 print(embeddings)
 
@@ -252,7 +252,7 @@ deploy_client = mlflow.deployments.get_deploy_client("databricks")
 def get_embedding(contents: pd.Series) -> pd.Series:
     def get_embeddings(batch):
         #Note: this will gracefully fail if an exception is thrown during embedding creation (add try/except if needed) 
-        response = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": batch})
+        response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": batch})
         return [e['embedding'] for e in response.data]
 
     # Splitting the contents into batches of 150 items each, since the embedding model takes at most 150 inputs per request.
@@ -360,7 +360,7 @@ deploy_client = mlflow.deployments.get_deploy_client("databricks")
 question = "How can I track billing usage on my workspaces?"
 
 # Convert query into embedding vector 
-response = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": [question]})
+response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": [question]})
 embeddings = [e['embedding'] for e in response.data]
 
 # Search for close embeddings in the vector index 
