@@ -57,7 +57,6 @@ spark.sql(sql_query)
 sql_query = f"""
 Use DATABASE {db};
 """
-
 spark.sql(sql_query)
 
 # COMMAND ----------
@@ -91,22 +90,27 @@ spark.sql(sql_query)
 # COMMAND ----------
 
 from databricks.sdk import WorkspaceClient
+
+host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 w = WorkspaceClient(token=dbutils.secrets.get("dbdemos", "rag_sp_token"), host=host)
 sp_id = w.current_user.me().emails[0].value
-print(sp_id)
+print(f"Service Principal ID: {sp_id}")
 
 # COMMAND ----------
 
 # DBTITLE 1,Grant Service Principal access to your database, index and model
+# Enable Service Principal (SP) to use the database, select from table and execute model
 spark.sql(f"GRANT USE SCHEMA ON DATABASE {db} TO `{sp_id}`")
 spark.sql(f"GRANT EXECUTE ON DATABASE {db} TO `{sp_id}`")
 spark.sql(f"GRANT SELECT ON DATABASE {db} TO `{sp_id}`")
+# If we want to enable inference table for the endpoint we have to give SP permission to create a table in db and modify that table.
+spark.sql(f"GRANT CREATE ON DATABASE {db} TO `{sp_id}`")
+spark.sql(f"GRANT MODIFY ON DATABASE {db} TO `{sp_id}`")
 
 # COMMAND ----------
 
 # DBTITLE 1,Make sure your SP has read access to your Vector Search Index
 index_name=f"{catalog}.{db}.databricks_documentation_vs_index"
-host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
 test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en")
 
@@ -343,6 +347,39 @@ displayHTML(f'Your Model Endpoint Serving is now available. Open the <a href="/m
 
 # COMMAND ----------
 
+# DBTITLE 1,Give manage permission on model endpoint to your user with SP credentials
+import requests
+import os
+
+def update_endpoint_acl(serving_endpoint_name, group_name, permission_level):
+    # Get the endpoint ID.
+    endpoint_url = f"{host}/api/2.0/serving-endpoints/{serving_endpoint_name}"
+    headers = {"Authorization": f"Bearer {os.environ['DATABRICKS_TOKEN']}"}
+    response = requests.get(endpoint_url, headers=headers)
+    response.raise_for_status()
+    endpoint_id = response.json()["id"]
+
+    # API endpoint URL for updating serving endpoint ACL
+    acl_url = f"{host}/api/2.0/permissions/serving-endpoints/{endpoint_id}"
+    
+    # Construct access control list object
+    acl_data = {"access_control_list": [{
+        "user_name": group_name, 
+        "permission_level": permission_level}
+        ]}
+
+    # Update the serving endpoint ACL by calling the Databricks REST API
+    try:
+        response = requests.patch(acl_url, headers=headers, json=acl_data)
+        response.raise_for_status()
+        print(f"Permissions updated successfully for {group_name}.")
+    except requests.exceptions.HTTPError as err:
+        print("Error:", err)
+        
+update_endpoint_acl(serving_endpoint_name, "<put your username here>", "CAN_MANAGE")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC Our endpoint is now deployed! You can search endpoint name on the [Serving Endpoint UI](#/mlflow/endpoints) and visualize its performance!
 # MAGIC
@@ -351,11 +388,16 @@ displayHTML(f'Your Model Endpoint Serving is now available. Open the <a href="/m
 # COMMAND ----------
 
 # DBTITLE 1,Let's try to send a query to our chatbot
-#question = "How can I track billing usage on my workspaces?"
-
 question = "How can i configure a Databricks Service Principal?"
+
 answer = w.serving_endpoints.query(serving_endpoint_name, inputs=[{"query": question}])
 print(answer.predictions[0])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC Next: --> **Enable Inference Table on your endpoint and send some additional requests**
 
 # COMMAND ----------
 
