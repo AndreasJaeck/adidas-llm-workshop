@@ -357,7 +357,7 @@ import mlflow.deployments
 deploy_client = mlflow.deployments.get_deploy_client("databricks")
 
 # Your query 
-question = "How can I track billing usage on my workspaces?"
+question = "How can I configure a Databricks Service Principal?"
 
 # Convert query into embedding vector 
 response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": [question]})

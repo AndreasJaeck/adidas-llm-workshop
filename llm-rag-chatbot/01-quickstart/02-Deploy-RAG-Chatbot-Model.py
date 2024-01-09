@@ -42,10 +42,13 @@
 
 # COMMAND ----------
 
-my_initals= '<put your initals here!>'
+# MAGIC %run ../_resources/00-init $reset_all_data=false
 
+# COMMAND ----------
+
+my_initals= '<put your initals here!>'
 db = f"rag_chatbot_{my_initals}"
-db = f"rag_chatbot"
+
 sql_query = f"""
 CREATE DATABASE IF NOT EXISTS {db};
 """
@@ -56,10 +59,6 @@ Use DATABASE {db};
 """
 
 spark.sql(sql_query)
-
-# COMMAND ----------
-
-# MAGIC %run ../_resources/00-init $reset_all_data=false
 
 # COMMAND ----------
 
@@ -91,17 +90,25 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+from databricks.sdk import WorkspaceClient
+w = WorkspaceClient(token=dbutils.secrets.get("dbdemos", "rag_sp_token"), host=host)
+sp_id = w.current_user.me().emails[0].value
+print(sp_id)
+
+# COMMAND ----------
+
+# DBTITLE 1,Grant Service Principal access to your database, index and model
+spark.sql(f"GRANT USE SCHEMA ON DATABASE {db} TO `{sp_id}`")
+spark.sql(f"GRANT EXECUTE ON DATABASE {db} TO `{sp_id}`")
+spark.sql(f"GRANT SELECT ON DATABASE {db} TO `{sp_id}`")
+
+# COMMAND ----------
+
 # DBTITLE 1,Make sure your SP has read access to your Vector Search Index
 index_name=f"{catalog}.{db}.databricks_documentation_vs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
 test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en")
-
-# COMMAND ----------
-
-from databricks.sdk import WorkspaceClient
-w = WorkspaceClient(token=dbutils.secrets.get("dbdemos", "rag_sp_token"), host=host)
-w.current_user.me().emails[0].value
 
 # COMMAND ----------
 
@@ -156,7 +163,7 @@ def get_retriever(persist_dir: str = None):
 
 # test our retriever
 vectorstore = get_retriever()
-similar_documents = vectorstore.get_relevant_documents("How do I track my Databricks Billing?")
+similar_documents = vectorstore.get_relevant_documents("How can I configure a Databricks Service Principal?")
 print(f"Relevant documents: {similar_documents[0]}")
 
 # COMMAND ----------
@@ -178,24 +185,24 @@ print(f"Relevant documents: {similar_documents[0]}")
 
 # COMMAND ----------
 
-# DBTITLE 1,Query Foundational Model API
-# Test Databricks Foundation LLM model
-from langchain.chat_models import ChatDatabricks
-chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
-print(f"Test chat model: {chat_model.predict('What is Apache Spark')}")
-
-# COMMAND ----------
-
 # DBTITLE 1,Query Serverless Model Serving Endpoint
 from langchain_community.llms import Databricks
 
 # Test LLM model on Serverless Endpoint 
-chat_model = Databricks(
+chat_model_self_hosting = Databricks(
     endpoint_name="llama_2_13b_chat",
     task="llama2/chat",
     verbose=True,
 )
 print(f"Test chat model: {chat_model('What is Apache Spark?')}")
+
+# COMMAND ----------
+
+# DBTITLE 1,Query Foundational Model API
+# Test Databricks Foundation LLM model
+from langchain.chat_models import ChatDatabricks
+chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
+print(f"Test chat model: {chat_model.predict('What is Apache Spark')}")
 
 # COMMAND ----------
 
@@ -245,7 +252,7 @@ chain = RetrievalQA.from_chain_type(
 
 # DBTITLE 1,Let's try our chatbot in the notebook directly:
 # langchain.debug = True #uncomment to see the chain details and the full prompt being sent
-question = {"query": "How can I track billing usage on my workspaces?"}
+question = {"query": "How can I configure a Databricks Service Principal?"}
 answer = chain.run(question)
 print(answer)
 
@@ -260,7 +267,7 @@ print(answer)
 
 #dbdemos__delete_this_cell
 #force the experiment to the field demos one. Required to launch as a batch
-init_experiment_for_batch("chatbot-rag-llm-custom", "simple")
+#init_experiment_for_batch("chatbot-rag-llm-custom", "simple")
 
 # COMMAND ----------
 
@@ -344,7 +351,9 @@ displayHTML(f'Your Model Endpoint Serving is now available. Open the <a href="/m
 # COMMAND ----------
 
 # DBTITLE 1,Let's try to send a query to our chatbot
-question = "How can I track billing usage on my workspaces?"
+#question = "How can I track billing usage on my workspaces?"
+
+question = "How can i configure a Databricks Service Principal?"
 answer = w.serving_endpoints.query(serving_endpoint_name, inputs=[{"query": question}])
 print(answer.predictions[0])
 
@@ -395,4 +404,4 @@ display_gradio_app("databricks-demos-chatbot")
 # COMMAND ----------
 
 # /!\ THIS WILL DROP YOUR DEMO SCHEMA ENTIRELY /!\ 
-cleanup_demo(catalog, db, serving_endpoint_name, f"{catalog}.{db}.databricks_documentation_vs_index")
+#cleanup_demo(catalog, db, serving_endpoint_name, f"{catalog}.{db}.databricks_documentation_vs_index")
