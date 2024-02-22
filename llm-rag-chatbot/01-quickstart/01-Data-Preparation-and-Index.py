@@ -42,13 +42,20 @@
 
 # COMMAND ----------
 
-my_initals= '<put your initals here!>'
-db = f"rag_chatbot_{my_initals}"
+my_initals= 'aj'
+catalog = f"dbdemos_{my_initals}"
+db = f"rag_chatbot"
+
+sql_query = f"""
+Use CATALOG {catalog};
+"""
+spark.sql(sql_query)
 
 sql_query = f"""
 CREATE DATABASE IF NOT EXISTS {db};
 """
 spark.sql(sql_query)
+
 
 sql_query = f"""
 Use DATABASE {db};
@@ -291,6 +298,10 @@ display(spark.table("databricks_documentation"))
 # MAGIC
 # MAGIC Vector search index uses a Vector search endpoint to serve the embeddings (you can think about it as your Vector Search API endpoint). <br/>
 # MAGIC Multiple Indexes can use the same endpoint. Let's start by creating one.
+
+# COMMAND ----------
+
+VECTOR_SEARCH_ENDPOINT_NAME = "dbdemos_vs_endpoint"
 
 # COMMAND ----------
 

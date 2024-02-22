@@ -27,7 +27,8 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install langchain-community==0.0.8 langchain_core==0.1.5 langchain==0.0.354 mlflow==2.9.1 lxml==4.9.3 databricks-vectorsearch==0.22 cloudpickle==2.2.1 databricks-sdk==0.12.0 cloudpickle==2.2.1 pydantic==2.5.2
+# MAGIC %pip install mlflow==2.9.0 lxml==4.9.3 langchain==0.0.344 databricks-vectorsearch==0.22 cloudpickle==2.2.1 databricks-sdk==0.12.0 cloudpickle==2.2.1 pydantic==2.5.2
+# MAGIC %pip install pip mlflow[databricks]==2.9.0
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -70,7 +71,7 @@ print(chain.invoke({"question": "What is Spark?"}))
 
 # DBTITLE 1,Calling Model on Serverless Endpoint
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import Databricks
+from langchain.chat_models import ChatDatabricks
 from langchain.schema.output_parser import StrOutputParser
 
 prompt = PromptTemplate(
@@ -78,11 +79,7 @@ prompt = PromptTemplate(
   template = "You are an assistant. Give a short answer to this question: {question}"
 )
 
-chat_model = Databricks(
-    endpoint_name="llama-2-7-chat-hf-aj",
-    task="llama2/chat",
-    verbose=True
-)
+chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 500)
 
 chain = (
   prompt
@@ -168,14 +165,14 @@ print(chain_with_history.invoke({
 # COMMAND ----------
 
 # Enable when using foundational API
-#chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
+chat_model = ChatDatabricks(endpoint="databricks-llama-2-70b-chat", max_tokens = 200)
 
 # Enable when using LLM on Serverless Endpoint
-chat_model = Databricks(
-    endpoint_name="llama-2-7-chat-hf-aj",
-    task="llama2/chat",
-    verbose=True
-)
+#chat_model = Databricks(
+#    endpoint_name="databricks-llama-2-70b-chat",
+#    task="llama2/chat",
+#    verbose=True
+#)
 
 is_question_about_databricks_str = """
 You are classifying documents to know if this question is related with Databricks in AWS, Azure and GCP, Workspaces, Databricks account and cloud infrastructure setup, Data Science, Data Engineering, Big Data, Datawarehousing, SQL, Python and Scala or something from a very different field. Also answer no if the last part is inappropriate. 
@@ -245,7 +242,7 @@ print(is_about_databricks_chain.invoke({
 # COMMAND ----------
 
 # remove during workshop 
-VECTOR_SEARCH_ENDPOINT_NAME = 'dbdemos_vs_endpoint_aj'
+VECTOR_SEARCH_ENDPOINT_NAME = 'dbdemos_vs_endpoint'
 
 # COMMAND ----------
 
@@ -253,7 +250,7 @@ index_name=f"{catalog}.{db}.databricks_pdf_documentation_self_managed_vs_index"
 host = "https://" + spark.conf.get("spark.databricks.workspaceUrl")
 
 #Let's make sure the secret is properly setup and can access our vector search index. Check the quick-start demo for more guidance
-test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="bge-large-en-aj")
+test_demo_permissions(host, secret_scope="dbdemos", secret_key="rag_sp_token", vs_endpoint_name=VECTOR_SEARCH_ENDPOINT_NAME, index_name=index_name, embedding_endpoint_name="databricks-bge-large-en")
 
 # COMMAND ----------
 
@@ -264,7 +261,7 @@ from langchain.chains import RetrievalQA
 
 os.environ['DATABRICKS_TOKEN'] = dbutils.secrets.get("dbdemos", "rag_sp_token")
 
-embedding_model = DatabricksEmbeddings(endpoint="bge-large-en-aj")
+embedding_model = DatabricksEmbeddings(endpoint="databricks-bge-large-en")
 
 def get_retriever(persist_dir: str = None):
     os.environ["DATABRICKS_HOST"] = host
@@ -476,7 +473,7 @@ display_chat(dialog["messages"], response)
 
 #dbdemos__delete_this_cell
 #force the experiment to the field demos one. Required to launch as a batch
-init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
+#init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
 
 # COMMAND ----------
 

@@ -32,6 +32,11 @@
 
 # COMMAND ----------
 
+my_initals= 'aj'
+db = f"rag_chatbot_{my_initals}"
+
+# COMMAND ----------
+
 # MAGIC %md-sandbox
 # MAGIC ## Deploy our model with Inference tables
 # MAGIC
@@ -42,6 +47,11 @@
 # MAGIC Simply define the `auto_capture_config` parameter during the deployment (or through the UI) to define the table where the endpoint request payload will automatically be saved.
 # MAGIC
 # MAGIC Databricks will fill the table for you in the background, as a fully managed service.
+
+# COMMAND ----------
+
+my_initals= 'aj'
+db = f"rag_chatbot_{my_initals}"
 
 # COMMAND ----------
 
@@ -123,6 +133,11 @@ display_gradio_app("databricks-demos-chatbot")
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC USE DATABASE rag_chatbot_aj
+
+# COMMAND ----------
+
 #Let's generate some traffic to our endpoint. We send 50 questions and wait for them to be in our inference table
 #See ../_resources/00-init-advanced for more details
 send_requests_to_endpoint_and_wait_for_payload_to_be_available(serving_endpoint_name, spark.table("evaluation_dataset").select('question'), limit=3)
@@ -137,6 +152,10 @@ send_requests_to_endpoint_and_wait_for_payload_to_be_available(serving_endpoint_
 # MAGIC Open the [05-Inference-Tables-Analysis-Notebook-with-LLM-Metrics]($./05-Inference-Tables-Analysis-Notebook-with-LLM-Metrics) notebook for more details, or just run it directly from this notebook:
 # MAGIC
 # MAGIC *Note that depending of your model input/output, you might need to change the notebook unpacking logic. See the notebook commments for more details*
+
+# COMMAND ----------
+
+serving_endpoint_name
 
 # COMMAND ----------
 

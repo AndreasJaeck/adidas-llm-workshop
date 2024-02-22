@@ -40,6 +40,11 @@
 
 # COMMAND ----------
 
+my_initals= 'aj'
+db = f"rag_chatbot_{my_initals}"
+
+# COMMAND ----------
+
 # MAGIC %md-sandbox
 # MAGIC ### Creating an external model endpoint with Azure Open AI as a judge
 # MAGIC
@@ -61,7 +66,7 @@
 
 #dbdemos__delete_this_cell
 #force the experiment to the field demos one. Required to launch as a batch
-init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
+#init_experiment_for_batch("chatbot-rag-llm-advanced", "simple")
 
 # COMMAND ----------
 
@@ -77,15 +82,12 @@ try:
                 {
                     "name": endpoint_name,
                     "external_model": {
-                        "name": "gpt-35-turbo",
+                        "name": "gpt-3.5-turbo",
                         "provider": "openai",
                         "task": "llm/v1/chat",
                         "openai_config": {
-                            "openai_api_type": "azure",
-                            "openai_api_key": "{{secrets/dbdemos/azure-openai}}", #Replace with your own azure open ai key
-                            "openai_deployment_name": "dbdemo-gpt35",
-                            "openai_api_base": "https://dbdemos-open-ai.openai.azure.com/",
-                            "openai_api_version": "2023-05-15"
+                            "openai_api_type": "openai",
+                            "openai_api_key": "{{secrets/dbdemos/azure-openai}}" #Replace with your own azure open ai key
                         }
                     }
                 }
@@ -119,6 +121,12 @@ answer_test['choices'][0]['message']['content']
 volume_folder =  f"/Volumes/{catalog}/{db}/volume_databricks_documentation/evaluation_dataset"
 #Load the eval dataset from the repository to our volume
 upload_dataset_to_volume(volume_folder)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC USE DATABASE rag_chatbot_aj
 
 # COMMAND ----------
 
@@ -185,6 +193,7 @@ from mlflow.metrics.genai import make_genai_metric, EvaluationExample
 
 # Because we have our labels (answers) within the evaluation dataset, we can evaluate the answer correctness as part of our metric. Again, this is optional.
 answer_correctness_metrics = answer_correctness(model=f"endpoints:/{endpoint_name}")
+print(endpoint_name)
 print(answer_correctness_metrics)
 
 # COMMAND ----------

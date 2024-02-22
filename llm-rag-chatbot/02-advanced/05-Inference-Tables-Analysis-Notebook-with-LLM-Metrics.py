@@ -43,6 +43,11 @@
 
 # COMMAND ----------
 
+my_initals= 'aj'
+db = f"rag_chatbot_{my_initals}"
+
+# COMMAND ----------
+
 # MAGIC %md-sandbox
 # MAGIC ## Exploring the Model Serving Inference table content
 # MAGIC

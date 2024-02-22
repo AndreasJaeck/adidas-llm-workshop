@@ -46,7 +46,7 @@
 
 # COMMAND ----------
 
-my_initals= '<put your initals here!>'
+my_initals= 'aj'
 db = f"rag_chatbot_{my_initals}"
 
 sql_query = f"""
@@ -376,7 +376,7 @@ def update_endpoint_acl(serving_endpoint_name, group_name, permission_level):
     except requests.exceptions.HTTPError as err:
         print("Error:", err)
         
-update_endpoint_acl(serving_endpoint_name, "<put your username here>", "CAN_MANAGE")
+update_endpoint_acl(serving_endpoint_name, "andreas.jack@databricks.com", "CAN_MANAGE")
 
 # COMMAND ----------
 
@@ -389,7 +389,11 @@ update_endpoint_acl(serving_endpoint_name, "<put your username here>", "CAN_MANA
 
 # DBTITLE 1,Let's try to send a query to our chatbot
 question = "How can i configure a Databricks Service Principal?"
-
+question = "Who is Michael Jackson?"
+question = "What is Apache Spark?"
+question = "What is Unity Catalog?"
+question = "What is MLflow?"
+question = "How can i create a Service Principal?"
 answer = w.serving_endpoints.query(serving_endpoint_name, inputs=[{"query": question}])
 print(answer.predictions[0])
 

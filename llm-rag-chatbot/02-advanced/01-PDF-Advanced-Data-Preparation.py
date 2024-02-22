@@ -262,7 +262,7 @@ from mlflow.deployments import get_deploy_client
 deploy_client = get_deploy_client("databricks")
 
 ## NOTE: if you change your embedding model here, make sure you change it in the query step too
-embeddings = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": ["What is Apache Spark?"]})
+embeddings = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": ["What is Apache Spark?"]})
 pprint(embeddings)
 
 # COMMAND ----------
@@ -294,7 +294,7 @@ def get_embedding(contents: pd.Series) -> pd.Series:
     deploy_client = mlflow.deployments.get_deploy_client("databricks")
     def get_embeddings(batch):
         #Note: this will fail if an exception is thrown during embedding creation (add try/except if needed) 
-        response = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": batch})
+        response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": batch})
         return [e['embedding'] for e in response.data]
 
     # Splitting the contents into batches of 150 items each, since the embedding model takes at most 150 inputs per request.
@@ -351,7 +351,7 @@ if spark.catalog.tableExists(f'{catalog}.{db}.databricks_documentation'):
 
 # COMMAND ----------
 
-VECTOR_SEARCH_ENDPOINT_NAME = 'dbdemos_vs_endpoint_aj'
+VECTOR_SEARCH_ENDPOINT_NAME = 'dbdemos_vs_endpoint'
 
 # COMMAND ----------
 
@@ -417,7 +417,7 @@ wait_for_index_to_be_ready(vsc, VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname)
 
 question = "How can I track billing usage on my workspaces?"
 
-response = deploy_client.predict(endpoint="bge-large-en-aj", inputs={"input": [question]})
+response = deploy_client.predict(endpoint="databricks-bge-large-en", inputs={"input": [question]})
 embeddings = [e['embedding'] for e in response.data]
 
 results = vsc.get_index(VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname).similarity_search(
